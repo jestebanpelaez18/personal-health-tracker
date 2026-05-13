@@ -5,6 +5,11 @@ import io
 import zipfile
 import xml.etree.ElementTree as ET
 
+try:
+    from backend.azure_storage import upload_records_to_blob
+except ModuleNotFoundError:
+    from azure_storage import upload_records_to_blob
+
 APPLE_HEALTH_EXPORT_PATH = "apple_health_export/export.xml"
 
 
@@ -20,6 +25,7 @@ class HealthRecord(BaseModel):
 class AppleHealthUploadResponse(BaseModel):
     status: str
     total_records: int
+    blob_name: str
     sample: list[HealthRecord]
 
 
@@ -57,11 +63,11 @@ def _extract_records_from_zip(contents: bytes) -> list[HealthRecord]:
                     status_code=400,
                     detail="Invalid Apple Health export - export.xml not found",
                 )
-
             with zf.open(APPLE_HEALTH_EXPORT_PATH) as xml_file:
                 return _parse_apple_health_records(xml_file)
     except zipfile.BadZipFile as exc:
         raise HTTPException(status_code=400, detail="Invalid ZIP file") from exc
+
 
 app = FastAPI(
     title="Personal Health Tracker",
@@ -76,6 +82,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 def health_check():
     return {"status": "ok", "message": "Personal Health Tracker API running"}
@@ -89,8 +96,14 @@ async def upload_apple_health(file: UploadFile = File(...)) -> AppleHealthUpload
     contents = await file.read()
     records = _extract_records_from_zip(contents)
 
+    blob_name = upload_records_to_blob(
+        records=[r.model_dump() for r in records],
+        user_id="juan"
+    )
+
     return AppleHealthUploadResponse(
         status="success",
         total_records=len(records),
+        blob_name=blob_name,
         sample=records[:3],
     )
