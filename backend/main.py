@@ -4,7 +4,10 @@ from pydantic import BaseModel
 import io
 import zipfile
 import xml.etree.ElementTree as ET
+from backend.database import create_tables
+from backend.models import SleepRecord, WorkoutRecord, HeartRateRecord, BodyMetricsRecord
 
+create_tables()
 
 APPLE_HEALTH_EXPORT_PATH = "apple_health_export/export.xml"
 
