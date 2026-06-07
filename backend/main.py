@@ -5,10 +5,6 @@ import io
 import zipfile
 import xml.etree.ElementTree as ET
 
-try:
-    from backend.azure_storage import upload_records_to_blob
-except ModuleNotFoundError:
-    from azure_storage import upload_records_to_blob
 
 APPLE_HEALTH_EXPORT_PATH = "apple_health_export/export.xml"
 
